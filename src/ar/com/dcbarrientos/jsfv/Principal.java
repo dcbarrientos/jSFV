@@ -65,14 +65,17 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import ar.com.dcbarrientos.jsfv.methods.CRCGenerator;
+import ar.com.dcbarrientos.jsfv.methods.MD5Generator;
 import ar.com.dcbarrientos.jsfv.tables.ArchivosTableModel;
 import ar.com.dcbarrientos.jsfv.tables.ArchivosTableRenderer;
 
@@ -84,7 +87,7 @@ public class Principal extends JFrame{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String APP_NAME = "JSFV: Java Simple File Verification";
-	public static final String VERSION = "1.0"; 
+	public static final String VERSION = "1.0.1"; 
 	
 	private JSplitPane splitPane;
 	private JPanel southPanel;
@@ -144,6 +147,7 @@ public class Principal extends JFrame{
 		splitPane.setLeftComponent(scrollPane);
 		
 		tableArchivos = new JTable();
+		tableArchivos.setShowVerticalLines(false);
 		tableArchivos.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		tableArchivos.setDefaultRenderer(JLabel.class, new ArchivosTableRenderer());
 		
@@ -187,6 +191,12 @@ public class Principal extends JFrame{
 			
 		});
 		tableArchivos.setModel(archivosTableModel);
+		DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+		rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+		tableArchivos.getColumnModel().getColumn(Constantes.COLUMN_SIZE).setCellRenderer(rightRenderer);
+		tableArchivos.getColumnModel().getColumn(Constantes.COLUMN_CHECKSUM).setCellRenderer(rightRenderer);
+		tableArchivos.getColumnModel().getColumn(Constantes.COLUMN_SAVED_CHECKSUM).setCellRenderer(rightRenderer);
+		
 		scrollPane.setViewportView(tableArchivos);
 		
 		scrollPane_1 = new JScrollPane();
@@ -214,6 +224,12 @@ public class Principal extends JFrame{
 		btnStart.setMinimumSize(new Dimension(63, 23));
 		
 		btnCancel = new JButton(resource.getString("Principal.btnCancel"));
+		btnCancel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				cancelar();
+			}
+		});
 		GroupLayout gl_southPanel = new GroupLayout(southPanel);
 		gl_southPanel.setHorizontalGroup(
 			gl_southPanel.createParallelGroup(Alignment.LEADING)
@@ -247,7 +263,7 @@ public class Principal extends JFrame{
 				if(checksum != null){
 					lblFileProgress.setText(progressFile.getValue() + "%");
 					progressTotal.setValue(new Long(checksum.getBytesAcumulados() * 100 / archivosTableModel.getTotalBytesToRead()).intValue());
-					if(checksum.isDone()){
+					if(checksum.isDone() && !checksum.isCancelado()){
 						progressFile.setValue(100);
 						progressTotal.setValue(100);
 					}
@@ -470,10 +486,9 @@ public class Principal extends JFrame{
 							fileName = linea.substring(0, linea.lastIndexOf(" ")).trim();
 							checksum = linea.substring(linea.lastIndexOf(" "), linea.length()).trim();
 						}else{
-							fileName = linea.substring(linea.lastIndexOf(" "), linea.length()).trim();
+							fileName = linea.substring(linea.indexOf(" "), linea.length()).trim();
 							fileName = fileName.replace("*", "");
-							System.out.println(fileName);
-							checksum = linea.substring(0, linea.lastIndexOf(" ")).trim();
+							checksum = linea.substring(0, linea.indexOf(" ")).trim();
 						}
 						fileName = Paths.get(fileName).normalize().toString();
 						tmp = new File(file.getParent() + File.separator + fileName);
@@ -506,16 +521,26 @@ public class Principal extends JFrame{
 		}
 		cargando = false;
 	}
-
-	private void procesar(){
-		if(checksum == null 	|| checksum.isDone()){
-			if(metodo==Constantes.METHOD_MD5)
-				System.out.println(" Metodo: MD5");
-			else if(metodo==Constantes.METHOD_SFV)
-				checksum = new CRCGenerator(progressFile, tableArchivos);
-			else if(metodo==Constantes.METHOD_SHA1)
-				System.out.println(" Metodo: SHA1");
 	
+	private void cancelar(){
+		if(checksum != null && !checksum.isDone()){
+			checksum.cancelar();
+		}
+	}
+	
+	private void procesar(){
+		if(checksum == null || checksum.isDone()){
+			if(metodo==Constantes.METHOD_SFV)
+				checksum = new CRCGenerator(progressFile, tableArchivos);
+			else{
+				checksum = new MD5Generator(progressFile, tableArchivos);
+				if(metodo==Constantes.METHOD_MD5)
+					checksum.setMetodo(Constantes.NAME_MD5);
+				else if(metodo==Constantes.METHOD_SHA1)
+					checksum.setMetodo(Constantes.NAME_SHA1);
+				
+			}
+			
 			if(checksum != null){
 				checksum.setFileList(archivosTableModel.getArchivos());
 				checksum.execute();		

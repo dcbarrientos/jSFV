@@ -16,12 +16,12 @@
  */
 
 /** 
- * CRCGenerator.java
+ * MD5Generator.java
  *
  * Description:	    <Descripcion>
  * @author			Diego Barrientos <dc_barrientos@yahoo.com.ar>
  *
- * Created on 19 de ago. de 2016, 9:33:34 a. m. 
+ * Created on 23 de ago. de 2016, 1:55:46 p. m. 
  */
 
 package ar.com.dcbarrientos.jsfv.methods;
@@ -29,7 +29,8 @@ package ar.com.dcbarrientos.jsfv.methods;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.zip.CRC32;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javax.swing.JProgressBar;
 import javax.swing.JTable;
@@ -37,20 +38,19 @@ import javax.swing.JTable;
 import ar.com.dcbarrientos.jsfv.ChecksumGenerator;
 import ar.com.dcbarrientos.jsfv.Constantes;
 
-
 /**
  * @author Diego Barrientos <dc_barrientos@yahoo.com.ar>
  *
  */
-public class CRCGenerator extends ChecksumGenerator{
-	public CRCGenerator(JProgressBar progressBar){
+public class MD5Generator extends ChecksumGenerator{
+	public MD5Generator(JProgressBar progressBar){
 		this.progressBar = progressBar;
 		this.tableFile = null;
 		this.currentRow = -1;
 		this.canceled = false;
 	}
 	
-	public CRCGenerator(JProgressBar progressBar, JTable tableFile){
+	public MD5Generator(JProgressBar progressBar, JTable tableFile){
 		this.progressBar = progressBar;
 		this.tableFile = tableFile;
 		this.currentRow = -1;
@@ -70,21 +70,32 @@ public class CRCGenerator extends ChecksumGenerator{
 				long fileSize = fileList.elementAt(indice).length();
 				acumulado = 0;
 				
-				CRC32 metodo = new CRC32();
+				MessageDigest metodo = MessageDigest.getInstance(methodName);
+				metodo.reset();
 				
-				while((read = input.read(buffer)) != -1 && !canceled){
+				while((read = input.read(buffer)) != -1){
 					metodo.update(buffer, 0, read);
 					acumulado += read;
 					acumuladoTotal += read;
 					publish(acumulado * 100 / fileSize);
 				}
 				
-				checksumList[indice] = String.format("%08X", metodo.getValue());
+				byte[] byteResult = metodo.digest();
+				String txtResult = "";
+				for(int i = 0; i < byteResult.length; i++)
+					txtResult += Integer.toString( (byteResult[i] & 0xff ) + 0x100, 16).substring( 1 );
+				
+				checksumList[indice] = txtResult.toUpperCase();
+				
 				input.close();
 			}catch(FileNotFoundException e){
 				checksumList[indice] = Constantes.SFV_FILE_NOT_FOUND;
+				e.printStackTrace();
 			}catch(IOException e){
 				//TODO manejar este error
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			publish(new Long(100));
@@ -93,7 +104,8 @@ public class CRCGenerator extends ChecksumGenerator{
 			if(tableFile != null && !canceled){
 				tableFile.setValueAt(checksumList[indice], indice, Constantes.COLUMN_CHECKSUM);
 			}
-			indice ++;
+			
+			indice++;
 		}
 		
 		if(canceled && input != null){
@@ -107,4 +119,5 @@ public class CRCGenerator extends ChecksumGenerator{
 		
 		return null;
 	}
+	
 }

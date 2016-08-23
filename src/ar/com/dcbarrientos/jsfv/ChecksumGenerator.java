@@ -27,8 +27,11 @@
 package ar.com.dcbarrientos.jsfv;
 
 import java.io.File;
+import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JProgressBar;
+import javax.swing.JTable;
 import javax.swing.SwingWorker;
 
 /**
@@ -36,8 +39,61 @@ import javax.swing.SwingWorker;
  *
  */
 public abstract class ChecksumGenerator extends SwingWorker<Void, Long>{
-	public abstract long getBytesAcumulados();
-	public abstract void setFileList(Vector<File> fileList);
-	public abstract int getCurrentRow();
-	public abstract String getChecksum(int index);
+	public static final int BUFFER_SIZE = 1024;
+	
+	protected Vector<File> fileList;	//Lista de archivos a procesar.
+	protected String[] checksumList;	//Lista con los checksums.
+	protected long acumulado;			//Cantidad de bytes acumulados por archivo
+	protected long acumuladoTotal;	//Cantidad de bytes acumulados en total.
+	protected int currentRow;		//Fila que está actualmente en verificación
+	protected String methodName;
+	protected JProgressBar progressBar;
+	protected JTable tableFile;
+	protected boolean canceled;
+	
+	@Override
+	protected void process(List<Long>datos){
+		progressBar.setValue(datos.get(0).intValue());
+	}
+	
+	@Override
+	protected void done(){
+		if(!canceled)
+			progressBar.setValue(100);
+	}
+	
+	//@Override
+	public long getBytesAcumulados(){
+		return acumuladoTotal;
+	}
+		
+	public void setFileList(File archivo){
+		fileList = new Vector<File>();
+		fileList.add(archivo);
+	}
+	
+	public void setFileList(Vector<File> fileList){
+		this.fileList = fileList;
+		acumuladoTotal = -1;
+	}	
+	
+	public int getCurrentRow(){
+		return currentRow;
+	}
+
+	public String getChecksum(int index){
+		return checksumList[index];
+	}
+	
+	public void setMetodo(String methodName){
+		this.methodName = methodName;
+	}
+
+	public void cancelar(){
+		canceled = true;
+	}
+	
+	public boolean isCancelado(){
+		return canceled;
+	}
 }
