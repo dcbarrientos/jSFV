@@ -1,3 +1,9 @@
+[24-08-2016] - v1.0.2
+	+ Added support for SHA-256, SHA-384, SHA-512
+	+ Added counts legend.
+	+ Added popup menu. Can copy saved checksum and checksum to the clipboard.
+	+ Added tools: String Hash.
+	
 [23-08-2016] - v1.0.1
 	+ Table aligment: Size, Checksum and Saved checksum right alignment.
 	+ Added support for MD5 and SHA-1.

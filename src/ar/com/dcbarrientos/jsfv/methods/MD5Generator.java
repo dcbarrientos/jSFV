@@ -90,7 +90,7 @@ public class MD5Generator extends ChecksumGenerator{
 				input.close();
 			}catch(FileNotFoundException e){
 				checksumList[indice] = Constantes.SFV_FILE_NOT_FOUND;
-				e.printStackTrace();
+				//e.printStackTrace();
 			}catch(IOException e){
 				//TODO manejar este error
 				e.printStackTrace();

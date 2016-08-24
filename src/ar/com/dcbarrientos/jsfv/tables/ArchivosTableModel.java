@@ -32,6 +32,7 @@ import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 
 import ar.com.dcbarrientos.jsfv.Constantes;
@@ -126,6 +127,9 @@ public class ArchivosTableModel extends AbstractTableModel{
 		datos = new Vector<Object[]>();
 		archivos = new Vector<File>();
 		
+		for(int i = 0; i < columnSize.length; i++)
+			columnSize[i] = 0;
+		
 		fireTableDataChanged();
 		
 	}
@@ -154,6 +158,8 @@ public class ArchivosTableModel extends AbstractTableModel{
 	private JLabel getLabel(String nombre, int icono){
 		JLabel label = new JLabel(getIcono(icono), JLabel.LEFT);
 		label.setText(nombre);
+		label.setIconTextGap(8);
+		label.setBorder(new EmptyBorder(Constantes.TABLE_MARGIN, 0, Constantes.TABLE_MARGIN, 0));
 		
 		return label;
 	}
@@ -182,6 +188,8 @@ public class ArchivosTableModel extends AbstractTableModel{
 	private void verifySize(String valor, int index){
 		if(valor != null){
 			columnSize[index] = metrics.stringWidth(valor);
+			if(index == Constantes.COLUMN_SAVED_CHECKSUM)
+				columnSize[Constantes.COLUMN_CHECKSUM] = columnSize[index];
 		}
 	}
 	
@@ -196,6 +204,8 @@ public class ArchivosTableModel extends AbstractTableModel{
 			
 			if(ancho > columnSize[index]){
 				columnSize[index] = ancho;
+				if(index == Constantes.COLUMN_SAVED_CHECKSUM)
+					columnSize[Constantes.COLUMN_CHECKSUM] = columnSize[index];
 			}
 		}
 	}

@@ -29,7 +29,10 @@ package ar.com.dcbarrientos.jsfv;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Point;
 import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -57,6 +60,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -66,9 +70,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -87,7 +95,7 @@ public class Principal extends JFrame{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String APP_NAME = "JSFV: Java Simple File Verification";
-	public static final String VERSION = "1.0.1"; 
+	public static final String VERSION = "1.0.2"; 
 	
 	private JSplitPane splitPane;
 	private JPanel southPanel;
@@ -110,12 +118,17 @@ public class Principal extends JFrame{
 	private JMenuItem menuFileOpen;
 	private JSeparator separator;
 	private JMenuItem menuFileExit;
+	private JPanel leftPanel;
 
 	private int accion; 		//Esta variable determina si se genera un archivo nuevo o si se verifica uno ya creado.
 	private int metodo; 		//Determina el método a utilizar.
 	private boolean cargando;	//True cuando se esta cargando la lista de archivos.
 	private ChecksumGenerator checksum = null;
 	private ResourceBundle resource;
+	private int goodCount;
+	private int badCount;
+	private int notFoundCount;
+	private Clipboard clipboard;
 	
 	private ArchivosTableModel archivosTableModel; 
 	private JSeparator separator_1;
@@ -126,6 +139,20 @@ public class Principal extends JFrame{
 	private JLabel lblFileProcessed;
 	private JButton btnSave;
 	private JButton btnNew;
+	
+	private JPanel panelLegend;
+	private JLabel lblGood;
+	private JLabel lblGoodCount;
+	private JLabel lblBad;
+	private JLabel lblBadCount;
+	private JLabel lblNotFound;
+	private JLabel lblNotFoundCount;
+	
+	private JPopupMenu mnuClipboard;
+	private JMenuItem mnuClipboardCopy;
+	private JMenuItem mnuClipboardCopySaved;
+	private JMenu menuTools;
+	private JMenuItem menuToolsHashString;
 	
 	public Principal(ResourceBundle resource){
 		super();
@@ -140,13 +167,21 @@ public class Principal extends JFrame{
 		setTitle(getVersion());
 		
 		splitPane = new JSplitPane();
+		splitPane.setOneTouchExpandable(true);
 		splitPane.setResizeWeight(0.5);
 		getContentPane().add(splitPane, BorderLayout.CENTER);
 		
 		scrollPane = new JScrollPane();
-		splitPane.setLeftComponent(scrollPane);
 		
 		tableArchivos = new JTable();
+		tableArchivos.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(e.getButton() == MouseEvent.BUTTON3){
+					mnuClipboard.show(e.getComponent(), e.getX(), e.getY());
+				}
+			}
+		});
 		tableArchivos.setShowVerticalLines(false);
 		tableArchivos.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		tableArchivos.setDefaultRenderer(JLabel.class, new ArchivosTableRenderer());
@@ -171,11 +206,15 @@ public class Principal extends JFrame{
 							
 							if(strChecksum.equals(Constantes.SFV_FILE_NOT_FOUND)){
 								archivosTableModel.setRowIcon(checksum.getCurrentRow(), Constantes.ICON_FILE_NOT_FOUND);
+								notFoundCount++;
 							}else if(strChecksum.equals(strSaved)){
 								archivosTableModel.setRowIcon(checksum.getCurrentRow(), Constantes.ICON_OK);
+								goodCount++;
 							}else{
 								archivosTableModel.setRowIcon(checksum.getCurrentRow(), Constantes.ICON_ERROR);
+								badCount++;
 							}
+							updateLegend();
 						}
 					}else if(accion == Constantes.ACCION_NUEVO){
 						String strChecksum = (String)archivosTableModel.getValueAt(checksum.getCurrentRow() , Constantes.COLUMN_CHECKSUM);
@@ -198,6 +237,45 @@ public class Principal extends JFrame{
 		tableArchivos.getColumnModel().getColumn(Constantes.COLUMN_SAVED_CHECKSUM).setCellRenderer(rightRenderer);
 		
 		scrollPane.setViewportView(tableArchivos);
+
+		leftPanel = new JPanel();
+		leftPanel.setLayout(new BorderLayout());
+		leftPanel.add(scrollPane, BorderLayout.CENTER);
+		
+		panelLegend = new JPanel();
+		FlowLayout fl_panelLegend = new FlowLayout();
+		fl_panelLegend.setAlignment(FlowLayout.LEFT);
+		panelLegend.setLayout(fl_panelLegend);
+		
+		lblGood = new JLabel();
+		lblGood.setBorder(new EmptyBorder(0, Constantes.LEGEND_LEFT_MARGIN, 0, 0));
+		lblGood.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Icon_Ok_16x16.png")));
+		lblGood.setText(resource.getString("Principal.panelLegend.lblGood"));
+		panelLegend.add(lblGood);
+		
+		lblGoodCount = new JLabel();
+		lblGoodCount.setBorder(new EmptyBorder(0, 0, 0, Constantes.LEGEND_RIGHT_MARGIN));
+		lblGoodCount.setText("0");
+		panelLegend.add(lblGoodCount);
+		
+		leftPanel.add(panelLegend, BorderLayout.SOUTH);
+		
+		lblBad = new JLabel(resource.getString("Principal.panelLegend.lblBad"));
+		lblBad.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Icon_Cancel_16x16.png")));
+		panelLegend.add(lblBad);
+		
+		lblBadCount = new JLabel("0");
+		lblBadCount.setBorder(new EmptyBorder(0, 0, 0, Constantes.LEGEND_RIGHT_MARGIN));
+		panelLegend.add(lblBadCount);
+		
+		lblNotFound = new JLabel(resource.getString("Principal.panelLegend.lblNotFound"));
+		lblNotFound.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-Not-Found_16x16.png")));
+		panelLegend.add(lblNotFound);
+		
+		lblNotFoundCount = new JLabel("0");
+		panelLegend.add(lblNotFoundCount);
+		
+		splitPane.setLeftComponent(leftPanel);
 		
 		scrollPane_1 = new JScrollPane();
 		splitPane.setRightComponent(scrollPane_1);
@@ -362,13 +440,66 @@ public class Principal extends JFrame{
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setJMenuBar(getMenuPrincipal());
+		clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+		mnuClipboard = getPopup();
 		
 		pack();		
 		setLocationRelativeTo(null);
 	}
 	
+	private JPopupMenu getPopup(){
+		mnuClipboardCopy = new JMenuItem(resource.getString("Principal.mnuClipboard.mnuClipboardCopy"));
+		mnuClipboardCopy.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Clipboard-icon.png")));
+		mnuClipboardCopy.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringSelection seleccion = new StringSelection((String)tableArchivos.getValueAt(tableArchivos.getSelectedRow(), Constantes.COLUMN_CHECKSUM));
+				clipboard.setContents(seleccion, seleccion);
+			}
+		});
+		mnuClipboardCopySaved = new JMenuItem(resource.getString("Principal.mnuClipboard.mnuClipboardCopySaved"));
+		mnuClipboardCopySaved.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Clipboard-edit-icon.png")));
+		mnuClipboardCopySaved.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringSelection seleccion = new StringSelection((String)tableArchivos.getValueAt(tableArchivos.getSelectedRow(), Constantes.COLUMN_SAVED_CHECKSUM));
+				clipboard.setContents(seleccion, seleccion);
+			}
+		});
+		
+		mnuClipboard = new JPopupMenu();
+		mnuClipboard.addPopupMenuListener(new PopupMenuListener() {
+			
+			@Override
+			public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+				SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        int rowAtPoint = tableArchivos.rowAtPoint(SwingUtilities.convertPoint(mnuClipboard, new Point(0, 0), tableArchivos));
+                        if (rowAtPoint > -1) {
+                            tableArchivos.setRowSelectionInterval(rowAtPoint, rowAtPoint);
+                        }
+                    }
+                });				
+			}
+			
+			@Override
+			public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+			}
+			
+			@Override
+			public void popupMenuCanceled(PopupMenuEvent e) {
+			}
+		});
+		
+		mnuClipboard.add(mnuClipboardCopy);
+		mnuClipboard.add(mnuClipboardCopySaved);
+		
+		return mnuClipboard;
+	}
+	
 	private void browseMouseClicked(){
-		FileNameExtensionFilter filter = new FileNameExtensionFilter("MD5, SFV, SHA-1", "md5", "sfv", "sha1");
+		FileNameExtensionFilter filter = new FileNameExtensionFilter("MD5, SFV, SHA-1, SHA-256, SHA-384, SHA-512", "md5", "sfv", "sha1", "sha256", "sha384", "sha512");
 		
 		JFileChooser fc = new JFileChooser();
 		fc.addChoosableFileFilter(filter);
@@ -428,6 +559,18 @@ public class Principal extends JFrame{
 		});
 		menuFile.add(menuFileExit);
 		
+		menuTools = new JMenu(resource.getString("Principal.menuTools"));
+		menuBarPrincipal.add(menuTools);
+		
+		menuToolsHashString = new JMenuItem(resource.getString("Principal.menuToolsHashString"));
+		menuToolsHashString.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mostrarHashStringDialog();
+			}
+		});
+		menuTools.add(menuToolsHashString);
+		
 		menuHelp = new JMenu(resource.getString("Principal.menuHelp"));
 		menuBarPrincipal.add(menuHelp);
 		
@@ -455,6 +598,12 @@ public class Principal extends JFrame{
 			return Constantes.METHOD_MD5;
 		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA1)){
 			return Constantes.METHOD_SHA1;
+		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA256)){
+			return Constantes.METHOD_SHA256;
+		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA384)){
+			return Constantes.METHOD_SHA384;
+		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA512)){
+			return Constantes.METHOD_SHA512;
 		}
 		
 		return ERROR;
@@ -530,6 +679,7 @@ public class Principal extends JFrame{
 	
 	private void procesar(){
 		if(checksum == null || checksum.isDone()){
+			goodCount = badCount = notFoundCount = 0;
 			if(metodo==Constantes.METHOD_SFV)
 				checksum = new CRCGenerator(progressFile, tableArchivos);
 			else{
@@ -538,12 +688,18 @@ public class Principal extends JFrame{
 					checksum.setMetodo(Constantes.NAME_MD5);
 				else if(metodo==Constantes.METHOD_SHA1)
 					checksum.setMetodo(Constantes.NAME_SHA1);
-				
+				else if(metodo==Constantes.METHOD_SHA256)
+					checksum.setMetodo(Constantes.NAME_SHA256);
+				else if(metodo==Constantes.METHOD_SHA384)
+					checksum.setMetodo(Constantes.NAME_SHA384);
+				else if(metodo==Constantes.METHOD_SHA512)
+					checksum.setMetodo(Constantes.NAME_SHA512);
 			}
 			
 			if(checksum != null){
 				checksum.setFileList(archivosTableModel.getArchivos());
-				checksum.execute();		
+				checksum.execute();
+				setTableColumnSize(archivosTableModel.getColumnsSize());
 			}
 		}
 	}
@@ -565,6 +721,12 @@ public class Principal extends JFrame{
 			resultado += Constantes.EXTENSION_MD5;
 		else if(metodo == Constantes.METHOD_SHA1)
 			resultado += Constantes.EXTENSION_SHA1;
+		else if(metodo == Constantes.METHOD_SHA256)
+			resultado += Constantes.EXTENSION_SHA256;
+		else if(metodo == Constantes.METHOD_SHA384)
+			resultado += Constantes.EXTENSION_SHA384;
+		else if(metodo == Constantes.METHOD_SHA512)
+			resultado += Constantes.EXTENSION_SHA512;
 		
 		return resultado;
 	}
@@ -590,7 +752,6 @@ public class Principal extends JFrame{
 		txtSfvPath.setText(getSFVFileName(archivos[0]));
 		cargando = false;
 		setTableColumnSize(archivosTableModel.getColumnsSize());
-
 	}
 	
 	private void resetDatos(){
@@ -598,6 +759,7 @@ public class Principal extends JFrame{
 		progressFile.setValue(0);
 		progressTotal.setValue(0);
 		lblFileProgress.setText("0%");
+		goodCount = badCount = notFoundCount = 0;
 		checksum = null;
 	}
 	
@@ -660,5 +822,20 @@ public class Principal extends JFrame{
 	private void setTableColumnSize(int[] sizes){
 		for(int i = 0; i < sizes.length; i++)
 			tableArchivos.getColumnModel().getColumn(i).setPreferredWidth(sizes[i] + Constantes.COLUMN_CONSTANT);
+	}
+	
+	private void updateLegend(){
+		lblGoodCount.setText(Integer.toString(goodCount));
+		lblBadCount.setText(Integer.toString(badCount));
+		lblNotFoundCount.setText(Integer.toString(notFoundCount));		
+	}
+	
+	private void mostrarHashStringDialog(){
+		ToolDialog toolDialog = new ToolDialog(this);
+		StringHash hashString = new StringHash(resource);
+		toolDialog.setTitle(resource.getString("StringHash.title"));
+		toolDialog.add(hashString, BorderLayout.CENTER);
+		toolDialog.showDialog();
+		
 	}
 }

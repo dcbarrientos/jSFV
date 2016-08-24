@@ -46,6 +46,10 @@ public class Constantes {
 	public static final int METHOD_SFV = 0;
 	public static final int METHOD_MD5 = 1;
 	public static final int METHOD_SHA1 = 2;
+	public static final int METHOD_SHA256 = 3;
+	public static final int METHOD_SHA384 = 4;
+	public static final int METHOD_SHA512 = 5;
+	
 	
 	public static final int ACCION_NUEVO = 0;
 	public static final int ACCION_VERIFICAR = 1;
@@ -59,13 +63,24 @@ public class Constantes {
 	public static final String EXTENSION_SFV = ".sfv";
 	public static final String EXTENSION_MD5 = ".md5";
 	public static final String EXTENSION_SHA1 = ".sha1";
+	public static final String EXTENSION_SHA256 = ".sha256";
+	public static final String EXTENSION_SHA384 = ".sha384";
+	public static final String EXTENSION_SHA512 = ".sha512";
 	
 	public static final String NAME_SFV = "SFV";
 	public static final String NAME_MD5 = "MD5";
 	public static final String NAME_SHA1 = "SHA-1";
+	public static final String NAME_SHA256 = "SHA-256";
+	public static final String NAME_SHA384 = "SHA-384";
+	public static final String NAME_SHA512 = "SHA-512";
 	
 	public static final String SFV_FILE_NOT_FOUND = "nf";
 	public static final int COLUMN_CONSTANT = 20;
+	public static final int LEGEND_RIGHT_MARGIN = 10;
+	public static final int LEGEND_LEFT_MARGIN = 30;
+	
+	public static final int TABLE_MARGIN = 10;
+	
 			
 	/**
 	 * Cuando se le ingresa un valor en bytes devuelve su equivalente en la unidad más
