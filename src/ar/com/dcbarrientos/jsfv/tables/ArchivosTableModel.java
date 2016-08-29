@@ -39,6 +39,10 @@ import ar.com.dcbarrientos.jsfv.Constantes;
 import ar.com.dcbarrientos.jsfv.Principal;
 
 /**
+ * This is an implementation of TableModel that uses a Vector to store arrays 
+ * of Objects. Each array in this vector will store a <code>JLabel</code> with 
+ * de file name, the file size, the checksum and the saved checksum (if it exists).
+ * 
  * @author Diego Barrientos <dc_barrientos@yahoo.com.ar>
  *
  */
@@ -52,12 +56,21 @@ public class ArchivosTableModel extends AbstractTableModel{
 	private long totalBytesToRead;
 	private FontMetrics metrics;
 	
+	/**
+	 * Constructs an ArchivosTableModel which a zero rows and columns. 
+	 */
 	public ArchivosTableModel() {
 		datos = new Vector<Object[]>();
 		archivos = new Vector<File>();
 		totalBytesToRead = 0;		
 	}
 	
+	/**
+	 * Returns an attribute value for the cell at row and column.
+	 * @param rowIndex 			the row whose value is to be queried
+	 * @param columnIndex 		the column whose value is to be queried	
+	 * @return 					the value Object at the specified cell
+	 */
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		if(datos != null){
@@ -67,6 +80,14 @@ public class ArchivosTableModel extends AbstractTableModel{
 		return null;
 	}
 	
+	/**
+	 * Sets the object value for the cell at column and 
+	 * row. aValue is the new value. This method will generate a 
+	 * tableChanged notification.
+	 * @param value				the new value; this can be null
+	 * @param rowIndex			the row whose value is to be changed
+	 * @param columnIndex		the column whose value is to be changed
+	 */
 	public void setValueAt(Object value, int rowIndex, int columnIndex){
 		Object[] elemento = new Object[headers.length];
 		elemento = datos.get(rowIndex);
@@ -74,10 +95,14 @@ public class ArchivosTableModel extends AbstractTableModel{
 		datos.set(rowIndex, elemento);
 		
 		verifySize(value, columnIndex);
-		
+
 		fireTableDataChanged();
 	}
 	
+	/**
+	 * Returns the number of rows in this data table.
+	 * @return	the number of rows in the model
+	 */
 	@Override
 	public int getRowCount() {
 		if(datos != null)
@@ -85,11 +110,22 @@ public class ArchivosTableModel extends AbstractTableModel{
 		return 0;
 	}
 	
+	/**
+	 * Returns the number of columns in this data table.
+	 * @return the number of columns in the model
+	 */
 	@Override
 	public int getColumnCount() {
 		return headers.length;
 	}
 	
+	/**
+	 * Returns the column name.
+	 * @param column the column being queried.
+	 * @return	a name for this column using the string value of the appropriate 
+	 * member in columnIdentifiers. If columnIdentifiers does not have an entry 
+	 * for this index, returns the default name provided by the superclass.
+	 */
 	@Override
 	public String getColumnName(int column) {
 		return headers[column];
@@ -99,6 +135,7 @@ public class ArchivosTableModel extends AbstractTableModel{
 	public Class<?> getColumnClass(int columnIndex){
 		return clases[columnIndex];
 	}
+	
 	
 	public void setHeaders(String[] headers){
 		this.headers = headers;
@@ -128,7 +165,7 @@ public class ArchivosTableModel extends AbstractTableModel{
 		archivos = new Vector<File>();
 		
 		for(int i = 0; i < columnSize.length; i++)
-			columnSize[i] = 0;
+			columnSize[i] = metrics.stringWidth((String)headers[i]);
 		
 		fireTableDataChanged();
 		
@@ -204,7 +241,7 @@ public class ArchivosTableModel extends AbstractTableModel{
 			
 			if(ancho > columnSize[index]){
 				columnSize[index] = ancho;
-				if(index == Constantes.COLUMN_SAVED_CHECKSUM)
+				if(index == Constantes.COLUMN_SAVED_CHECKSUM && columnSize[Constantes.COLUMN_SAVED_CHECKSUM] > columnSize[Constantes.COLUMN_CHECKSUM])					
 					columnSize[Constantes.COLUMN_CHECKSUM] = columnSize[index];
 			}
 		}

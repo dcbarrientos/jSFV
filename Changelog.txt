@@ -1,3 +1,8 @@
+[29-08-2016] - v1.0.3
+	+ Added tools: Verify File
+	+ Fixed some table bugs.
+	+ Added command line parsing.
+
 [24-08-2016] - v1.0.2
 	+ Added support for SHA-256, SHA-384, SHA-512
 	+ Added counts legend.

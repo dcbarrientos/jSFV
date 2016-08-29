@@ -72,8 +72,7 @@ public class NuevoArchivo extends JDialog{
 	private JLabel lblMethod;
 	private JComboBox<String> cbListMethods;
 
-	private String[] listMethods = {Constantes.NAME_SFV, Constantes.NAME_MD5, Constantes.NAME_SHA1,
-									Constantes.NAME_SHA256, Constantes.NAME_SHA384, Constantes.NAME_SHA512};
+	private String[] listMethods = Constantes.getMethodsByName();
 	
 	public NuevoArchivo(Principal principal, ResourceBundle resource){
 		super(principal, true);

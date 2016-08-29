@@ -30,6 +30,10 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ResourceBundle;
 
 import javax.swing.GroupLayout;
@@ -38,6 +42,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.LayoutStyle.ComponentPlacement;
 
 /**
@@ -53,6 +60,11 @@ public class About extends JDialog{
 	private JButton btnAccept;
 
 	ResourceBundle resource;
+	private JTabbedPane tabbedPane;
+	private JTextArea txtChangelog;
+	private JScrollPane scrollChangelog;
+	private JTextArea txtLicense;
+	private JScrollPane scrollLicense;
 	
 	public About(Principal principal, ResourceBundle resource){
 		super(principal, true);
@@ -61,8 +73,8 @@ public class About extends JDialog{
 	}
 	
 	private void initComponents(){
-		setTitle("About...");
-		setPreferredSize(new Dimension(450, 200));
+		setTitle(resource.getString("About.title"));
+		setPreferredSize(new Dimension(700, 450));
 		
 		lblNewLabel = new JLabel("");
 		lblNewLabel.setMaximumSize(new Dimension(90, 90));
@@ -76,27 +88,29 @@ public class About extends JDialog{
 		
 		lblNewLabel_3 = new JLabel("Copyright (c) 2016 Diego Barrientos");
 		
-		btnAccept = new JButton("Accept");
+		btnAccept = new JButton(resource.getString("About.btnAccept"));
 		btnAccept.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e){
 				dispose();
 			}
 		});
+		
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		GroupLayout groupLayout = new GroupLayout(getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(lblNewLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addComponent(lblNewLabel_1)
-						.addComponent(lblNewLabel_2)
-						.addComponent(lblNewLabel_3))
-					.addContainerGap(282, Short.MAX_VALUE))
-				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
-					.addContainerGap(335, Short.MAX_VALUE)
-					.addComponent(btnAccept)
+						.addComponent(tabbedPane, GroupLayout.DEFAULT_SIZE, 464, Short.MAX_VALUE)
+						.addGroup(groupLayout.createSequentialGroup()
+							.addComponent(lblNewLabel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addComponent(lblNewLabel_1)
+								.addComponent(lblNewLabel_2)
+								.addComponent(lblNewLabel_3)))
+						.addComponent(btnAccept, Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE))
 					.addContainerGap())
 		);
 		groupLayout.setVerticalGroup(
@@ -113,10 +127,27 @@ public class About extends JDialog{
 							.addComponent(lblNewLabel_2)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(lblNewLabel_3)))
-					.addPreferredGap(ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(tabbedPane, GroupLayout.DEFAULT_SIZE, 259, Short.MAX_VALUE)
+					.addGap(11)
 					.addComponent(btnAccept)
 					.addContainerGap())
 		);
+		
+		txtChangelog = new JTextArea();
+		txtChangelog.setFont(new Font("Courier New", Font.PLAIN, 13));
+		scrollChangelog = new JScrollPane();
+		scrollChangelog.setViewportView(txtChangelog);
+		loadTextFile("Changelog.txt", txtChangelog);
+		
+		txtLicense = new JTextArea();
+		txtLicense.setFont(new Font("Courier New", Font.PLAIN, 13));
+		scrollLicense = new JScrollPane();
+		scrollLicense.setViewportView(txtLicense);
+		loadTextFile("LICENSE", txtLicense);
+		
+		tabbedPane.addTab(resource.getString("About.changelogTab.title"), null, scrollChangelog, null);
+		tabbedPane.addTab(resource.getString("About.licenseTab.title"), null, scrollLicense, null);
 		getContentPane().setLayout(groupLayout);
 		pack();
 		setLocationRelativeTo(null);
@@ -124,5 +155,21 @@ public class About extends JDialog{
 	
 	public void showDialog(){
 		setVisible(true);
+	}
+	
+	private void loadTextFile(String fileName, JTextArea control){
+		BufferedReader buffer;
+		try {
+			buffer = new BufferedReader(new FileReader(fileName));
+			
+			control.read(buffer, null);
+			buffer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

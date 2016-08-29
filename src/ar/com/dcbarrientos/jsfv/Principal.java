@@ -88,14 +88,14 @@ import ar.com.dcbarrientos.jsfv.tables.ArchivosTableModel;
 import ar.com.dcbarrientos.jsfv.tables.ArchivosTableRenderer;
 
 /**
- * @author Diego Barrientos <dc_barrientos@yahoo.com.ar>
+ * @author Diego Barrientos
  *
  */
 public class Principal extends JFrame{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String APP_NAME = "JSFV: Java Simple File Verification";
-	public static final String VERSION = "1.0.2"; 
+	public static final String VERSION = "1.0.3"; 
 	
 	private JSplitPane splitPane;
 	private JPanel southPanel;
@@ -153,6 +153,7 @@ public class Principal extends JFrame{
 	private JMenuItem mnuClipboardCopySaved;
 	private JMenu menuTools;
 	private JMenuItem menuToolsHashString;
+	private JMenuItem menuToolsVerifyFile;
 	
 	public Principal(ResourceBundle resource){
 		super();
@@ -344,6 +345,7 @@ public class Principal extends JFrame{
 					if(checksum.isDone() && !checksum.isCancelado()){
 						progressFile.setValue(100);
 						progressTotal.setValue(100);
+						setTableColumnSize(archivosTableModel.getColumnsSize());
 					}
 
 				}
@@ -506,10 +508,8 @@ public class Principal extends JFrame{
 		fc.setFileFilter(filter);
 		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
 			txtSfvPath.setText(fc.getSelectedFile().getPath());
-			accion = Constantes.ACCION_VERIFICAR;
-			metodo = getFileType(fc.getSelectedFile().getPath());
 			
-			loadSFV();
+			loadSFV(txtSfvPath.getText());
 		}		
 	}
 	
@@ -563,6 +563,7 @@ public class Principal extends JFrame{
 		menuBarPrincipal.add(menuTools);
 		
 		menuToolsHashString = new JMenuItem(resource.getString("Principal.menuToolsHashString"));
+		menuToolsHashString.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Actions-tools-check-spelling-icon.png")));
 		menuToolsHashString.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -571,10 +572,21 @@ public class Principal extends JFrame{
 		});
 		menuTools.add(menuToolsHashString);
 		
+		menuToolsVerifyFile = new JMenuItem(resource.getString("Principal.menuToolsVerifyFile"));
+		menuToolsVerifyFile.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/document-check-icon.png")));
+		menuToolsVerifyFile.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mostrarVerifyFileDialog();
+			}
+		});
+		menuTools.add(menuToolsVerifyFile);
+		
 		menuHelp = new JMenu(resource.getString("Principal.menuHelp"));
 		menuBarPrincipal.add(menuHelp);
 		
 		menuHelpAbout = new JMenuItem(resource.getString("Principal.menuHelpAbout"));
+		menuHelpAbout.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/logo16x16.png")));
 		menuHelpAbout.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -592,27 +604,16 @@ public class Principal extends JFrame{
 	 * @return
 	 */
 	private int getFileType(String fileName){
-		if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SFV)){
-			return Constantes.METHOD_SFV;
-		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_MD5)){
-			return Constantes.METHOD_MD5;
-		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA1)){
-			return Constantes.METHOD_SHA1;
-		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA256)){
-			return Constantes.METHOD_SHA256;
-		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA384)){
-			return Constantes.METHOD_SHA384;
-		}else if(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase().equals(Constantes.EXTENSION_SHA512)){
-			return Constantes.METHOD_SHA512;
-		}
-		
-		return ERROR;
+		return Constantes.getMethodIndexByExtension(fileName.substring(fileName.lastIndexOf("."), fileName.length()).toLowerCase());
 	}
 	
-	private void loadSFV(){
+	public void loadSFV(String sfvFileName){
 		BufferedReader input = null;
-		File file = new File(txtSfvPath.getText());
+		File file = new File(sfvFileName);
 		String linea;
+		
+		accion = Constantes.ACCION_VERIFICAR;
+		metodo = getFileType(sfvFileName);
 		
 		archivosTableModel.resetDatos();
 		cargando = true;
@@ -677,23 +678,14 @@ public class Principal extends JFrame{
 		}
 	}
 	
-	private void procesar(){
+	public void procesar(){
 		if(checksum == null || checksum.isDone()){
 			goodCount = badCount = notFoundCount = 0;
 			if(metodo==Constantes.METHOD_SFV)
 				checksum = new CRCGenerator(progressFile, tableArchivos);
 			else{
 				checksum = new MD5Generator(progressFile, tableArchivos);
-				if(metodo==Constantes.METHOD_MD5)
-					checksum.setMetodo(Constantes.NAME_MD5);
-				else if(metodo==Constantes.METHOD_SHA1)
-					checksum.setMetodo(Constantes.NAME_SHA1);
-				else if(metodo==Constantes.METHOD_SHA256)
-					checksum.setMetodo(Constantes.NAME_SHA256);
-				else if(metodo==Constantes.METHOD_SHA384)
-					checksum.setMetodo(Constantes.NAME_SHA384);
-				else if(metodo==Constantes.METHOD_SHA512)
-					checksum.setMetodo(Constantes.NAME_SHA512);
+				checksum.setMetodo((String)Constantes.METHODS[metodo][Constantes.METHOD_NAME]);
 			}
 			
 			if(checksum != null){
@@ -704,7 +696,7 @@ public class Principal extends JFrame{
 		}
 	}
 	
-	private String getVersion(){
+	public String getVersion(){
 		return APP_NAME + " " + VERSION;
 	}
 	
@@ -715,19 +707,8 @@ public class Principal extends JFrame{
 		else
 			resultado += archivo.getParent() + File.separator + archivo.getParentFile().getName();
 		
-		if(metodo == Constantes.METHOD_SFV)
-			resultado += Constantes.EXTENSION_SFV;
-		else if(metodo == Constantes.METHOD_MD5)
-			resultado += Constantes.EXTENSION_MD5;
-		else if(metodo == Constantes.METHOD_SHA1)
-			resultado += Constantes.EXTENSION_SHA1;
-		else if(metodo == Constantes.METHOD_SHA256)
-			resultado += Constantes.EXTENSION_SHA256;
-		else if(metodo == Constantes.METHOD_SHA384)
-			resultado += Constantes.EXTENSION_SHA384;
-		else if(metodo == Constantes.METHOD_SHA512)
-			resultado += Constantes.EXTENSION_SHA512;
-		
+		resultado += (String)Constantes.METHODS[metodo][Constantes.METHOD_EXTENSION];
+
 		return resultado;
 	}
 	
@@ -740,6 +721,14 @@ public class Principal extends JFrame{
 			cargarNuevaLista(nuevoArchivo.getDatos());
 			textFileDescriptor.setText("");
 		}		
+	}
+	
+	public void nuevoArchivo(File[] archivos, int metodo){
+		resetDatos();
+		this.metodo = metodo;
+		this.accion = Constantes.ACCION_NUEVO;
+		cargarNuevaLista(archivos);
+		textFileDescriptor.setText("");
 	}
 	
 	private void cargarNuevaLista(File[] archivos){
@@ -834,8 +823,16 @@ public class Principal extends JFrame{
 		ToolDialog toolDialog = new ToolDialog(this);
 		StringHash hashString = new StringHash(resource);
 		toolDialog.setTitle(resource.getString("StringHash.title"));
-		toolDialog.add(hashString, BorderLayout.CENTER);
+		toolDialog.getContentPane().add(hashString, BorderLayout.CENTER);
 		toolDialog.showDialog();
 		
+	}
+	
+	private void mostrarVerifyFileDialog(){
+		ToolDialog toolDialog = new ToolDialog(this);
+		VerifyFile verifyFile = new VerifyFile(resource);
+		toolDialog.setTitle(resource.getString("VerifyFile.title"));
+		toolDialog.getContentPane().add(verifyFile, BorderLayout.CENTER);
+		toolDialog.showDialog();
 	}
 }

@@ -40,6 +40,10 @@ public class ToolDialog extends JDialog{
 	
 	private static final long serialVersionUID = 1L;
 
+	public ToolDialog(){
+		initComponents();
+	}
+	
 	public ToolDialog(Principal principal){
 		super(principal, true);
 		

@@ -60,24 +60,21 @@ public class Constantes {
 	public static final int ICON_QUESTION = 2;
 	public static final int ICON_FILE_NOT_FOUND = 3;
 	
-	public static final String EXTENSION_SFV = ".sfv";
-	public static final String EXTENSION_MD5 = ".md5";
-	public static final String EXTENSION_SHA1 = ".sha1";
-	public static final String EXTENSION_SHA256 = ".sha256";
-	public static final String EXTENSION_SHA384 = ".sha384";
-	public static final String EXTENSION_SHA512 = ".sha512";
-	
-	public static final String NAME_SFV = "SFV";
-	public static final String NAME_MD5 = "MD5";
-	public static final String NAME_SHA1 = "SHA-1";
-	public static final String NAME_SHA256 = "SHA-256";
-	public static final String NAME_SHA384 = "SHA-384";
-	public static final String NAME_SHA512 = "SHA-512";
-	
 	public static final String SFV_FILE_NOT_FOUND = "nf";
 	public static final int COLUMN_CONSTANT = 20;
 	public static final int LEGEND_RIGHT_MARGIN = 10;
 	public static final int LEGEND_LEFT_MARGIN = 30;
+	
+	public static final Object METHODS[][] = {  {"SFV", ".sfv", 8},
+												{"MD5", ".md5", 32},
+												{"SHA-1", ".sha1", 40},
+												{"SHA-256", ".sha256", 64},
+												{"SHA-384", ".sha384", 96},
+												{"SHA-512", ".sha512", 128}};
+	
+	public static final int METHOD_NAME = 0;
+	public static final int METHOD_EXTENSION = 1;
+	public static final int METHOD_LENGTH=2;
 	
 	public static final int TABLE_MARGIN = 10;
 	
@@ -108,4 +105,52 @@ public class Constantes {
 	
 		return dec.format(size).concat(" Gb.");
 	}	
+	
+	public static String[] getMethodsByName(){
+		String[] listMethods = new String[METHODS.length];
+		for(int i = 0; i < METHODS.length; i++)
+			listMethods[i] = (String)METHODS[i][METHOD_NAME];
+		
+		return listMethods;
+	}
+	
+	public static int getMethodIndexByLength(int length){
+		for(int i = 0; i < METHODS.length; i++){
+			if(length == (int)METHODS[i][METHOD_LENGTH])
+				return i;
+		}
+		
+		return ERROR;
+	}
+	
+	public static int getMethodIndexByExtension(String extension){
+		for(int i = 0; i < METHODS.length; i++){
+			if(extension.equals((String)METHODS[i][METHOD_EXTENSION])){
+				return i;
+			}
+		}
+		
+		return ERROR;
+	}
+	
+	public static int getMethodIndexByName(String name){
+		for(int i = 0; i < METHODS.length; i++){
+			if(name.equals((String)METHODS[i][METHOD_NAME])){
+				return i;
+			}
+		}
+		
+		return ERROR;
+	}
+	
+	public static boolean isChecksumListFile(String fileName){
+		String extension = fileName.substring(fileName.lastIndexOf('.'), fileName.length());
+		for(int i = 0; i < METHODS.length; i++){
+			if(extension.equals(METHODS[i][METHOD_EXTENSION])){
+				return true;
+			}
+		}
+		
+		return false;
+	}
 }

@@ -266,17 +266,9 @@ public class StringHash extends JPanel{
 	}
 	
 	private String getCheckName(int metodo){
-		if(metodo == Constantes.METHOD_MD5)
-			return Constantes.NAME_MD5;
-		else if(metodo == Constantes.METHOD_SHA1)
-			return Constantes.NAME_SHA1;
-		else if(metodo == Constantes.METHOD_SHA256)
-			return Constantes.NAME_SHA256;
-		else if(metodo == Constantes.METHOD_SHA384)
-			return Constantes.NAME_SHA384;
-		else if(metodo == Constantes.METHOD_SHA512)
-			return Constantes.NAME_SHA512;
-		
+		if(metodo >= 0 && metodo < Constantes.METHODS.length)
+			return (String)Constantes.METHODS[metodo][Constantes.METHOD_NAME];
+
 		return null;
 	}
 	
