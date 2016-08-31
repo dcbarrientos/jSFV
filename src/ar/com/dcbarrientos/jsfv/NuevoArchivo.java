@@ -26,7 +26,10 @@
 
 package ar.com.dcbarrientos.jsfv;
 
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.FontMetrics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -36,14 +39,16 @@ import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.border.EtchedBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import ar.com.dcbarrientos.jsfv.tables.NuevoArchivoTableModel;
 
@@ -69,11 +74,8 @@ public class NuevoArchivo extends JDialog{
 	private boolean isOk;
 	private JButton btnDeleteFile;
 	private JButton btnEmptyList;
-	private JLabel lblMethod;
-	private JComboBox<String> cbListMethods;
+	private JPanel panel;
 
-	private String[] listMethods = Constantes.getMethodsByName();
-	
 	public NuevoArchivo(Principal principal, ResourceBundle resource){
 		super(principal, true);
 		
@@ -84,31 +86,14 @@ public class NuevoArchivo extends JDialog{
 	}
 	
 	private void initComponents(){
-		setMinimumSize(new Dimension(410, 370));
+		setMinimumSize(new Dimension(500, 370));
 		setTitle(resource.getString("NuevoArchivo.title"));
 		lblChooseFiles = new JLabel(resource.getString("NuevoArchivo.lblChooseFiles"));
 		
 		scrollPane = new JScrollPane();
 		
-		btnAddFiles = new JButton("");
-		btnAddFiles.setToolTipText(resource.getString("NuevoArchivo.btnAddFiles.tooltip"));
-		btnAddFiles.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-New-icon.png")));
-		btnAddFiles.addMouseListener(new MouseAdapter(){
-			public void mouseClicked(MouseEvent e){
-				loadFiles();
-			}
-		});
-		
-		btnAddFolder = new JButton("");
-		btnAddFolder.setToolTipText(resource.getString("NuevoArchivo.btnAddFolder.tooltip"));
-		btnAddFolder.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/Folder-Add-icon.png")));
-		btnAddFolder.addMouseListener(new MouseAdapter(){
-			public void mouseClicked(MouseEvent e){
-				loadFolder();
-			}
-		});
-		
 		btnAccept = new JButton(resource.getString("NuevoArchivo.btnAccept"));
+		btnAccept.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/Ok-icon.png")));
 		btnAccept.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -118,6 +103,7 @@ public class NuevoArchivo extends JDialog{
 		});
 		
 		btnCancel = new JButton(resource.getString("NuevoArchivo.btnCancel"));
+		btnCancel.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/Cancel-icon.png")));
 		btnCancel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -126,92 +112,105 @@ public class NuevoArchivo extends JDialog{
 			}
 		});
 		
-		btnDeleteFile = new JButton("");
-		btnDeleteFile.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-Delete-icon.png")));
-		btnDeleteFile.addMouseListener(new MouseAdapter(){
-			public void mouseClicked(MouseEvent e){
-				deleteFile();
-			}
-		});
-		
-		btnEmptyList = new JButton("");
-		btnEmptyList.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/trash-empty-icon.png")));
-		btnEmptyList.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e){
-				emptyList();
-			}
-		});
-		
-		lblMethod = new JLabel(resource.getString("NuevoArchivo.lblMethod"));
-		
-		cbListMethods = new JComboBox<String>(listMethods);
+		panel = new JPanel();
+		panel.setBackground(Color.WHITE);
+		panel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+		flowLayout.setAlignment(FlowLayout.LEFT);
 		
 		GroupLayout groupLayout = new GroupLayout(getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
-				.addGroup(groupLayout.createSequentialGroup()
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
 							.addContainerGap()
-							.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-								.addComponent(lblChooseFiles, GroupLayout.DEFAULT_SIZE, 374, Short.MAX_VALUE)
-								.addGroup(groupLayout.createSequentialGroup()
-									.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 303, Short.MAX_VALUE)
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-										.addComponent(btnDeleteFile)
-										.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-											.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-												.addComponent(btnAddFolder)
-												.addComponent(btnAddFiles))
-											.addComponent(btnEmptyList))))))
-						.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+							.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
+						.addGroup(groupLayout.createSequentialGroup()
 							.addComponent(btnAccept)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnCancel))
 						.addGroup(groupLayout.createSequentialGroup()
-							.addContainerGap()
-							.addComponent(lblMethod)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(cbListMethods, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
+							.addGap(20)
+							.addComponent(lblChooseFiles, GroupLayout.DEFAULT_SIZE, 374, Short.MAX_VALUE)))
 					.addContainerGap())
+				.addComponent(panel, GroupLayout.DEFAULT_SIZE, 404, Short.MAX_VALUE)
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addContainerGap()
+					.addGap(6)
+					.addComponent(panel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(lblChooseFiles)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnAddFiles)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnAddFolder)
-							.addGap(18)
-							.addComponent(btnDeleteFile)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnEmptyList))
-						.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 228, GroupLayout.PREFERRED_SIZE))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblMethod)
-						.addComponent(cbListMethods, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addPreferredGap(ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 265, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(btnCancel)
 						.addComponent(btnAccept))
 					.addContainerGap())
 		);
 		
+		btnAddFiles = new JButton(resource.getString("NuevoArchivo.btnAddFiles"));
+		panel.add(btnAddFiles);
+		btnAddFiles.setContentAreaFilled(false);
+		btnAddFiles.setBorderPainted(false);
+		btnAddFiles.setToolTipText(resource.getString("NuevoArchivo.btnAddFiles.tooltip"));
+		btnAddFiles.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-New-icon.png")));
+		
+		btnAddFolder = new JButton(resource.getString("NuevoArchivo.btnAddFolder"));
+		panel.add(btnAddFolder);
+		btnAddFolder.setBorderPainted(false);
+		btnAddFolder.setContentAreaFilled(false);
+		btnAddFolder.setToolTipText(resource.getString("NuevoArchivo.btnAddFolder.tooltip"));
+		btnAddFolder.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/Folder-Add-icon.png")));
+		
+		btnDeleteFile = new JButton(resource.getString("NuevoArchivo.btnDeleteFile"));
+		panel.add(btnDeleteFile);
+		btnDeleteFile.setBorderPainted(false);
+		btnDeleteFile.setContentAreaFilled(false);
+		btnDeleteFile.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-Delete-icon.png")));
+		
+		btnEmptyList = new JButton(resource.getString("NuevoArchivo.btnEmptyList"));
+		panel.add(btnEmptyList);
+		btnEmptyList.setBorderPainted(false);
+		btnEmptyList.setContentAreaFilled(false);
+		btnEmptyList.setIcon(new ImageIcon(NuevoArchivo.class.getResource("/ar/com/dcbarrientos/jsfv/images/trash-empty-icon.png")));
+		btnEmptyList.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e){
+				emptyList();
+			}
+		});
+		btnDeleteFile.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				deleteFile();
+			}
+		});
+		btnAddFolder.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				loadFolder();
+			}
+		});
+		btnAddFiles.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				loadFiles();
+			}
+		});
+		
 		table = new JTable();
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		tableModel = new NuevoArchivoTableModel();
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		FontMetrics fontMetrics = table.getFontMetrics(table.getFont());
+		
+		tableModel = new NuevoArchivoTableModel(fontMetrics);
 		String[] headers = {resource.getString("NuevoArchivo.header1"), resource.getString("NuevoArchivo.header2"), resource.getString("NuevoArchivo.header3")};
 		tableModel.setColumnIdentifiers(headers);
 
 		table.setModel(tableModel);
-		
+		DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+		rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+		table.getColumnModel().getColumn(NuevoArchivoTableModel.COLUMN_SIZE).setCellRenderer(rightRenderer);
+
 		scrollPane.setViewportView(table);
 		getContentPane().setLayout(groupLayout);
 		pack();
@@ -228,6 +227,8 @@ public class NuevoArchivo extends JDialog{
 			for(File elemento: archivos){
 				tableModel.addRow(elemento);
 			}
+			setTableColumnSize(tableModel.getColumnsSize());
+			
 		}
 	}
 		
@@ -243,12 +244,14 @@ public class NuevoArchivo extends JDialog{
 				if(elemento.isFile())
 					tableModel.addRow(elemento);
 			}
+			setTableColumnSize(tableModel.getColumnsSize());
 		}
 	}
 	
 	public void deleteFile(){
-		if(table.getSelectedRow() >= 0){
-			tableModel.removeAt(table.getSelectedRow());
+		int[] filas = table.getSelectedRows();
+		for(int i = 0; i < filas.length; i++){
+			tableModel.removeAt(filas[i] - i);
 		}
 	}
 	
@@ -266,7 +269,9 @@ public class NuevoArchivo extends JDialog{
 		return isOk;
 	}
 	
-	public int getMetodo(){
-		return cbListMethods.getSelectedIndex();
+	private void setTableColumnSize(int[] sizes){
+		for(int i = 0; i < sizes.length; i++)
+			table.getColumnModel().getColumn(i).setPreferredWidth(sizes[i] + Constantes.COLUMN_CONSTANT);
 	}
+
 }

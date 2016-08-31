@@ -1,3 +1,7 @@
+[31-08-2016] -v1.0.4
+	+ Changes in New Dialog.
+	+ Changes in how you choose the cheksum method.
+
 [29-08-2016] - v1.0.3
 	+ Added tools: Verify File
 	+ Fixed some table bugs.

@@ -209,6 +209,10 @@ public class ArchivosTableModel extends AbstractTableModel{
 		return totalBytesToRead;
 	}
 	
+	public File getFile(int rowIndex){
+		return archivos.elementAt(rowIndex);
+	}
+	
 	public String getStringFileName(int index){
 		return ((JLabel)datos.get(index)[Constantes.COLUMN_NAME]).getText();
 	}

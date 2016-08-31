@@ -47,7 +47,6 @@ public class ArchivosTableRenderer extends DefaultTableCellRenderer{
 			fillColor(table, elemento, isSelected);
 			return elemento;
 		}else{
-			System.out.println("paso");
 			return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 		}
 	}

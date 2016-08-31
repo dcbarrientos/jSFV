@@ -143,6 +143,10 @@ public class Constantes {
 		return ERROR;
 	}
 	
+	public static String getExtensionByIndex(int index){
+		return (String)METHODS[index][METHOD_EXTENSION];
+	}
+	
 	public static boolean isChecksumListFile(String fileName){
 		String extension = fileName.substring(fileName.lastIndexOf('.'), fileName.length());
 		for(int i = 0; i < METHODS.length; i++){

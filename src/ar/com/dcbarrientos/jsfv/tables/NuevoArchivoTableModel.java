@@ -26,6 +26,7 @@
 
 package ar.com.dcbarrientos.jsfv.tables;
 
+import java.awt.FontMetrics;
 import java.io.File;
 import java.util.Vector;
 
@@ -39,15 +40,19 @@ import ar.com.dcbarrientos.jsfv.Constantes;
  */
 public class NuevoArchivoTableModel extends AbstractTableModel{
 	private static final long serialVersionUID = 1L;
-	String[] headers;
-	Vector<File> datos;
+	private String[] headers;
+	private Vector<File> datos;
+	private FontMetrics fontMetrics;
+	private int[] columnSizes = {0, 0, 0};;
 	
 	public static final int COLUMN_NAME = 0;
 	public static final int COLUMN_SIZE = 1;
 	public static final int COLUMN_PATH = 2;
 	
-	public NuevoArchivoTableModel(){
+	public NuevoArchivoTableModel(FontMetrics fontMetrics){
 		datos = new Vector<File>();
+		
+		this.fontMetrics = fontMetrics;
 	}
 	
 	@Override
@@ -79,10 +84,24 @@ public class NuevoArchivoTableModel extends AbstractTableModel{
 	
 	public void setColumnIdentifiers(String[] headers){
 		this.headers = headers; 
+		if(datos.isEmpty()){
+			verificarAncho();
+		}
 	}
 	
 	public void addRow(File archivo){
 		datos.addElement(archivo);
+		//todo verificar el ancho para las 3 oclumnas
+		if(fontMetrics.stringWidth(archivo.getName()) > columnSizes[COLUMN_NAME]){
+			columnSizes[COLUMN_NAME] = fontMetrics.stringWidth(archivo.getName());
+		}
+		if(fontMetrics.stringWidth(Constantes.getExtendedSize(archivo.length())) > columnSizes[COLUMN_SIZE]){
+			columnSizes[COLUMN_SIZE] = fontMetrics.stringWidth(Constantes.getExtendedSize(archivo.length()));
+		}
+		if(fontMetrics.stringWidth(archivo.getPath()) > columnSizes[COLUMN_PATH]){
+			columnSizes[COLUMN_PATH] = fontMetrics.stringWidth(archivo.getPath());
+		}
+		
 		fireTableDataChanged();
 	}
 	
@@ -97,8 +116,25 @@ public class NuevoArchivoTableModel extends AbstractTableModel{
 		return archivos;
 	}
 	
+	public void setFontMetrics(FontMetrics fontMetrics){
+		this.fontMetrics = fontMetrics;
+	}
+	
 	public void removeAll(){
 		datos.removeAllElements();
+
 		fireTableDataChanged();
+	}
+	
+	private void verificarAncho(){
+		if(headers != null && headers.length > 0){
+			for(int i = 0; i < headers.length; i ++){
+				columnSizes[i] = fontMetrics.stringWidth(headers[i]);
+			}
+		}				
+	}
+	
+	public int[] getColumnsSize(){
+		return columnSizes;
 	}
 }

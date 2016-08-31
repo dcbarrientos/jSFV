@@ -36,8 +36,6 @@ import javax.swing.JDialog;
  *
  */
 public class ToolDialog extends JDialog{
-	//private Principal principal;
-	
 	private static final long serialVersionUID = 1L;
 
 	public ToolDialog(){

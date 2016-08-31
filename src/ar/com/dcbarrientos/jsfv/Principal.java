@@ -27,6 +27,7 @@
 package ar.com.dcbarrientos.jsfv;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Point;
@@ -52,6 +53,7 @@ import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -67,7 +69,6 @@ import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -95,13 +96,11 @@ public class Principal extends JFrame{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String APP_NAME = "JSFV: Java Simple File Verification";
-	public static final String VERSION = "1.0.3"; 
+	public static final String VERSION = "1.0.4"; 
 	
 	private JSplitPane splitPane;
 	private JPanel southPanel;
 	private JPanel northPanel;
-	private JLabel lblFilePath;
-	private JTextField txtSfvPath;
 	private JButton btnBrowse;
 	private JScrollPane scrollPane;
 	private JTable tableArchivos;
@@ -121,7 +120,6 @@ public class Principal extends JFrame{
 	private JPanel leftPanel;
 
 	private int accion; 		//Esta variable determina si se genera un archivo nuevo o si se verifica uno ya creado.
-	private int metodo; 		//Determina el método a utilizar.
 	private boolean cargando;	//True cuando se esta cargando la lista de archivos.
 	private ChecksumGenerator checksum = null;
 	private ResourceBundle resource;
@@ -129,6 +127,8 @@ public class Principal extends JFrame{
 	private int badCount;
 	private int notFoundCount;
 	private Clipboard clipboard;
+	private String sfvFileName;
+	private int metodoProcesado;
 	
 	private ArchivosTableModel archivosTableModel; 
 	private JSeparator separator_1;
@@ -154,6 +154,9 @@ public class Principal extends JFrame{
 	private JMenu menuTools;
 	private JMenuItem menuToolsHashString;
 	private JMenuItem menuToolsVerifyFile;
+	private JLabel lblMethod;
+	private JComboBox<String> cbMethods;
+	private JButton btnAbout;
 	
 	public Principal(ResourceBundle resource){
 		super();
@@ -166,6 +169,7 @@ public class Principal extends JFrame{
 		setIconImage(Toolkit.getDefaultToolkit().getImage(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/logo16x16.png")));		
 		setMinimumSize(new Dimension(630, 460));
 		setTitle(getVersion());
+		sfvFileName = "";
 		
 		splitPane = new JSplitPane();
 		splitPane.setOneTouchExpandable(true);
@@ -274,7 +278,14 @@ public class Principal extends JFrame{
 		panelLegend.add(lblNotFound);
 		
 		lblNotFoundCount = new JLabel("0");
+		lblNotFoundCount.setBorder(new EmptyBorder(0, 0, 0, 10));
 		panelLegend.add(lblNotFoundCount);
+		
+		lblMethod = new JLabel("Method:");
+		panelLegend.add(lblMethod);
+		
+		cbMethods = new JComboBox<String>(Constantes.getMethodsByName());
+		panelLegend.add(cbMethods);
 		
 		splitPane.setLeftComponent(leftPanel);
 		
@@ -293,16 +304,16 @@ public class Principal extends JFrame{
 		progressPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		
 		btnStart = new JButton(resource.getString("Principal.btnStart"));
+		btnStart.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Play-icon.png")));
 		btnStart.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				procesar();
 			}
 		});
-		btnStart.setMaximumSize(new Dimension(63, 23));
-		btnStart.setMinimumSize(new Dimension(63, 23));
 		
 		btnCancel = new JButton(resource.getString("Principal.btnCancel"));
+		btnCancel.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Cancel-icon.png")));
 		btnCancel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -314,11 +325,11 @@ public class Principal extends JFrame{
 			gl_southPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_southPanel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_southPanel.createParallelGroup(Alignment.LEADING)
-						.addGroup(Alignment.TRAILING, gl_southPanel.createSequentialGroup()
-							.addComponent(btnStart, GroupLayout.PREFERRED_SIZE, 72, GroupLayout.PREFERRED_SIZE)
+					.addGroup(gl_southPanel.createParallelGroup(Alignment.TRAILING)
+						.addGroup(gl_southPanel.createSequentialGroup()
+							.addComponent(btnStart, GroupLayout.PREFERRED_SIZE, 105, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnCancel, GroupLayout.PREFERRED_SIZE, 81, GroupLayout.PREFERRED_SIZE))
+							.addComponent(btnCancel, GroupLayout.PREFERRED_SIZE, 109, GroupLayout.PREFERRED_SIZE))
 						.addComponent(progressPanel, GroupLayout.DEFAULT_SIZE, 594, Short.MAX_VALUE))
 					.addContainerGap())
 		);
@@ -346,6 +357,7 @@ public class Principal extends JFrame{
 						progressFile.setValue(100);
 						progressTotal.setValue(100);
 						setTableColumnSize(archivosTableModel.getColumnsSize());
+						metodoProcesado = cbMethods.getSelectedIndex();
 					}
 
 				}
@@ -399,11 +411,20 @@ public class Principal extends JFrame{
 		
 		
 		northPanel = new JPanel();
-		FlowLayout fl_northPanel = (FlowLayout) northPanel.getLayout();
-		fl_northPanel.setAlignment(FlowLayout.LEFT);
+		northPanel.setBorder(null);
+		BorderLayout bl_northPanel = new BorderLayout();
+		northPanel.setLayout(bl_northPanel);
 		getContentPane().add(northPanel, BorderLayout.NORTH);
 		
+		JPanel toolBar = new JPanel();
+		FlowLayout flowLayout = (FlowLayout) toolBar.getLayout();
+		flowLayout.setAlignment(FlowLayout.LEFT);
+		toolBar.setBackground(Color.WHITE);
+		toolBar.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		
 		btnNew = new JButton(resource.getString("Principal.btnNew"));
+		btnNew.setBorderPainted(false);
+		btnNew.setContentAreaFilled(false);
 		btnNew.setToolTipText(resource.getString("Principal.btnNew.tooltip"));
 		btnNew.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-New.png")));
 		btnNew.addMouseListener(new MouseAdapter(){
@@ -411,25 +432,11 @@ public class Principal extends JFrame{
 				nuevoArchivo();
 			}
 		});
-		northPanel.add(btnNew);
-		
-		lblFilePath = new JLabel(resource.getString("Principal.lblFilePath"));
-		northPanel.add(lblFilePath);
-		
-		txtSfvPath = new JTextField();
-		northPanel.add(txtSfvPath);
-		txtSfvPath.setColumns(30);
-		
-		btnBrowse = new JButton(resource.getString("Principal.btnBrowse"));
-		btnBrowse.setToolTipText(resource.getString("Principal.btnBrowse.tooltip"));
-		btnBrowse.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Open-File-Icon.png")));
-		btnBrowse.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e){
-				browseMouseClicked();
-			}
-		});
+		toolBar.add(btnNew);
 		
 		btnSave = new JButton(resource.getString("Principal.btnSave"));
+		btnSave.setBorderPainted(false);
+		btnSave.setContentAreaFilled(false);
 		btnSave.setToolTipText(resource.getString("Principal.btnSave.tooltip"));
 		btnSave.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/File-Save.png")));
 		btnSave.addMouseListener(new MouseAdapter(){
@@ -437,9 +444,33 @@ public class Principal extends JFrame{
 				saveFile();
 			}
 		});
-		northPanel.add(btnSave);
-		northPanel.add(btnBrowse);
+		
+		btnBrowse = new JButton(resource.getString("Principal.btnBrowse"));
+		btnBrowse.setBorderPainted(false);
+		btnBrowse.setContentAreaFilled(false);
+		btnBrowse.setToolTipText(resource.getString("Principal.btnBrowse.tooltip"));
+		btnBrowse.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Open-File-Icon.png")));
+		btnBrowse.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e){
+				browseMouseClicked();
+			}
+		});
+		toolBar.add(btnBrowse);
+		toolBar.add(btnSave);
 
+		northPanel.add(toolBar, BorderLayout.CENTER);
+		
+		btnAbout = new JButton(resource.getString("Principal.menuHelpAbout"));
+		btnAbout.setBorderPainted(false);
+		btnAbout.setContentAreaFilled(false);
+		btnAbout.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/logo32x32.png")));
+		btnAbout.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				showAbout();
+			}
+		});
+		toolBar.add(btnAbout);
+		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setJMenuBar(getMenuPrincipal());
 		clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -507,9 +538,8 @@ public class Principal extends JFrame{
 		fc.addChoosableFileFilter(filter);
 		fc.setFileFilter(filter);
 		if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
-			txtSfvPath.setText(fc.getSelectedFile().getPath());
-			
-			loadSFV(txtSfvPath.getText());
+			sfvFileName = fc.getSelectedFile().getPath();
+			loadSFV(sfvFileName);
 		}		
 	}
 	
@@ -551,6 +581,7 @@ public class Principal extends JFrame{
 		menuFile.add(separator);
 		
 		menuFileExit = new JMenuItem(resource.getString("Principal.menuFileExit"));
+		menuFileExit.setIcon(new ImageIcon(Principal.class.getResource("/ar/com/dcbarrientos/jsfv/images/Exit-icon.png")));
 		menuFileExit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -613,7 +644,7 @@ public class Principal extends JFrame{
 		String linea;
 		
 		accion = Constantes.ACCION_VERIFICAR;
-		metodo = getFileType(sfvFileName);
+		cbMethods.setSelectedIndex(getFileType(sfvFileName));
 		
 		archivosTableModel.resetDatos();
 		cargando = true;
@@ -632,7 +663,8 @@ public class Principal extends JFrame{
 					if(!linea.startsWith(";")){
 						String fileName;
 						String checksum;
-						if(metodo == Constantes.METHOD_SFV){
+						//if(metodo == Constantes.METHOD_SFV){
+						if(cbMethods.getSelectedIndex() == Constantes.METHOD_SFV){
 							fileName = linea.substring(0, linea.lastIndexOf(" ")).trim();
 							checksum = linea.substring(linea.lastIndexOf(" "), linea.length()).trim();
 						}else{
@@ -681,11 +713,12 @@ public class Principal extends JFrame{
 	public void procesar(){
 		if(checksum == null || checksum.isDone()){
 			goodCount = badCount = notFoundCount = 0;
-			if(metodo==Constantes.METHOD_SFV)
+			
+			if(cbMethods.getSelectedIndex() == Constantes.METHOD_SFV)
 				checksum = new CRCGenerator(progressFile, tableArchivos);
 			else{
 				checksum = new MD5Generator(progressFile, tableArchivos);
-				checksum.setMetodo((String)Constantes.METHODS[metodo][Constantes.METHOD_NAME]);
+				checksum.setMetodo((String)Constantes.METHODS[cbMethods.getSelectedIndex()][Constantes.METHOD_NAME]);
 			}
 			
 			if(checksum != null){
@@ -707,7 +740,7 @@ public class Principal extends JFrame{
 		else
 			resultado += archivo.getParent() + File.separator + archivo.getParentFile().getName();
 		
-		resultado += (String)Constantes.METHODS[metodo][Constantes.METHOD_EXTENSION];
+		resultado += (String)Constantes.METHODS[cbMethods.getSelectedIndex()][Constantes.METHOD_EXTENSION];
 
 		return resultado;
 	}
@@ -716,7 +749,6 @@ public class Principal extends JFrame{
 		NuevoArchivo nuevoArchivo = new NuevoArchivo(this, resource);
 		if(nuevoArchivo.showDialog()){
 			resetDatos();
-			this.metodo = nuevoArchivo.getMetodo();
 			this.accion = Constantes.ACCION_NUEVO;
 			cargarNuevaLista(nuevoArchivo.getDatos());
 			textFileDescriptor.setText("");
@@ -725,7 +757,7 @@ public class Principal extends JFrame{
 	
 	public void nuevoArchivo(File[] archivos, int metodo){
 		resetDatos();
-		this.metodo = metodo;
+		cbMethods.setSelectedIndex(metodo);
 		this.accion = Constantes.ACCION_NUEVO;
 		cargarNuevaLista(archivos);
 		textFileDescriptor.setText("");
@@ -738,7 +770,6 @@ public class Principal extends JFrame{
 			archivosTableModel.addRow(archivo, null, Constantes.ICON_QUESTION);
 		}
 		lblFileProcessed.setText("0/" + archivosTableModel.getRowCount() + " files.");
-		txtSfvPath.setText(getSFVFileName(archivos[0]));
 		cargando = false;
 		setTableColumnSize(archivosTableModel.getColumnsSize());
 	}
@@ -753,7 +784,17 @@ public class Principal extends JFrame{
 	}
 	
 	private void saveFile(){
-		File archivo = new File(txtSfvPath.getText());
+		if(cbMethods.getSelectedIndex() != metodoProcesado){
+			JOptionPane.showMessageDialog(null, resource.getString("Principal.generate"), resource.getString("Prinicipal.savedialog.title"), JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		
+		File archivo;
+		if(sfvFileName.length() > 0){
+			archivo = new File(sfvFileName.substring(0, sfvFileName.lastIndexOf('.')) + Constantes.getExtensionByIndex(cbMethods.getSelectedIndex()));
+		}else
+			archivo = new File(getSFVFileName(archivosTableModel.getFile(0)));
+		
 		String linea = "";
 		
 		if(checksum == null){
@@ -761,13 +802,31 @@ public class Principal extends JFrame{
 				JOptionPane.showMessageDialog(null, resource.getString("Principal.message1"), resource.getString("Prinicipal.savedialog.title"), JOptionPane.INFORMATION_MESSAGE);
 			}
 		}else if(checksum.isDone()){
-			if(archivo != null){
+			JFileChooser fc = new JFileChooser();
+			fc.setSelectedFile(archivo);
+			
+			int rSave;
+			int r = JOptionPane.YES_OPTION;
+			do{
+				rSave = fc.showSaveDialog(this);
+				archivo= fc.getSelectedFile();
+				if(archivo.exists() && rSave == JFileChooser.APPROVE_OPTION){					
+					r = JOptionPane.showConfirmDialog(null, String.format(resource.getString("Principal.fileExists"), archivo.getPath()), resource.getString("Prinicipal.savedialog.title"), JOptionPane.YES_NO_CANCEL_OPTION);
+					if(r == JOptionPane.CANCEL_OPTION)
+						return;
+				}else if(rSave == JFileChooser.CANCEL_OPTION){
+					return;
+				}
+			}while(r == JOptionPane.NO_OPTION && archivo.exists());
+			
+			if(rSave == JFileChooser.APPROVE_OPTION){
 				try {
+					archivo = fc.getSelectedFile();
 					FileOutputStream writer = new FileOutputStream(archivo);
 					writer.write(getComments().getBytes());
 					for(int index = 0; index < tableArchivos.getRowCount(); index++){
 						linea = "";
-						if(metodo == Constantes.METHOD_SFV){
+						if(cbMethods.getSelectedIndex() == Constantes.METHOD_SFV){
 							linea += archivosTableModel.getStringFileName(index) + " " + archivosTableModel.getValueAt(index, Constantes.COLUMN_CHECKSUM);
 						}else{
 							linea += archivosTableModel.getValueAt(index, Constantes.COLUMN_CHECKSUM) + " " + archivosTableModel.getStringFileName(index);						
