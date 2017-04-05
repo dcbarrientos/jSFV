@@ -32,9 +32,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ResourceBundle;
 
 import javax.swing.GroupLayout;
@@ -161,13 +160,10 @@ public class About extends JDialog{
 	private void loadTextFile(String fileName, JTextArea control){
 		BufferedReader buffer;
 		try {
-			InputStream in = getClass().getResourceAsStream("/" + fileName);
-			if(in != null){
-				buffer = new BufferedReader(new InputStreamReader(in));
-				
-				control.read(buffer, null);
-				buffer.close();
-			}
+			buffer = new BufferedReader(new FileReader(fileName));
+			
+			control.read(buffer, null);
+			buffer.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

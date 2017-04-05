@@ -1,6 +1,3 @@
-[05-04-2017] -v1.0.5
-	+ Fixed problem comparing lowercase and uppercase.
-
 [31-08-2016] -v1.0.4
 	+ Changes in New Dialog.
 	+ Changes in how you choose the cheksum method.
