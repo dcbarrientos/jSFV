@@ -146,7 +146,7 @@ public class VerifyFile extends JPanel {
 					txtChecksumResutl.setText(checksum.getChecksum(0));
 					btnVerify.setText(resource.getString("VerifyFile.btnVerify"));
 					if(txtChecksum.getText().length() > 0 ){
-						if(txtChecksumResutl.getText().equals(txtChecksum.getText())){
+						if(txtChecksumResutl.getText().equalsIgnoreCase(txtChecksum.getText())){
 							txtChecksumResutl.setForeground(Color.GREEN);
 							JOptionPane.showMessageDialog(null, resource.getString("VerifyFile.verifyOK"), resource.getString("VerifyFile.title"), JOptionPane.INFORMATION_MESSAGE);
 						}else{

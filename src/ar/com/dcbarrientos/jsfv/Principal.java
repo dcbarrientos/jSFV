@@ -96,7 +96,7 @@ public class Principal extends JFrame{
 	private static final long serialVersionUID = 1L;
 	
 	public static final String APP_NAME = "JSFV: Java Simple File Verification";
-	public static final String VERSION = "1.0.4"; 
+	public static final String VERSION = "1.0.5"; 
 	
 	private JSplitPane splitPane;
 	private JPanel southPanel;
@@ -212,7 +212,7 @@ public class Principal extends JFrame{
 							if(strChecksum.equals(Constantes.SFV_FILE_NOT_FOUND)){
 								archivosTableModel.setRowIcon(checksum.getCurrentRow(), Constantes.ICON_FILE_NOT_FOUND);
 								notFoundCount++;
-							}else if(strChecksum.equals(strSaved)){
+							}else if(strChecksum.equalsIgnoreCase(strSaved)){
 								archivosTableModel.setRowIcon(checksum.getCurrentRow(), Constantes.ICON_OK);
 								goodCount++;
 							}else{
